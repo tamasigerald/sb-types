@@ -93,20 +93,6 @@ export const checkConfig = async (): Promise<ConfigOptions> => {
   return config;
 };
 
-// run request and log loading state
-export const runRequest = async (request: Promise<any>, key?: string) => {
-  console.log(chalk.blue("Loading... " + key));
-  try {
-    const response = await request;
-    console.log(chalk.green("Success!"));
-    return response;
-  } catch (error) {
-    console.log(chalk.red("Error!"));
-    console.log(error);
-    return process.exit(1);
-  }
-};
-
 const fetchStoryblokDatasource = async (
   endpoint: string,
   token: string,
@@ -117,6 +103,29 @@ const fetchStoryblokDatasource = async (
   );
   const response = await request.json();
   return response;
+};
+
+type DatasourceResponse = {
+  datasource_entries: [
+    {
+      id: number;
+      name: string;
+      value: string;
+      dimension_value: null | string;
+    }
+  ];
+};
+
+const parseDatasourceResponse = (response: DatasourceResponse, key: string) => {
+  return `\nexport type ${
+    // string is like "global-translations" => "GlobalTranslations"
+    key
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join("")
+  } = '${response.datasource_entries
+    .map(({ name }: { name: string }) => name)
+    .join("' | '")}';`;
 };
 
 const init = async () => {
@@ -162,39 +171,23 @@ const init = async () => {
 
       const filePath = config.outputPath || "./types/sb-types.ts";
 
-      // remove the file name from the path
+      // remove the file name from the path, then create the directory if it doesn't exist
       const dirPath = filePath.split("/").slice(0, -1).join("/");
-      mkdirp.sync(dirPath);
+      mkdirp.sync(dirPath); // this will create the directory if not exists
 
-      // if file exists, append to it
+      // if file exists or no overwrite flag, append to it instead of overwriting it
       if (fs.existsSync(filePath) && !program.opts().overwrite) {
         console.log(chalk.blue("Appending to file..."));
         fs.appendFileSync(
           path.join(process.cwd(), config.outputPath || "./types/sb-types.ts"),
-          `\nexport type ${
-            // string is like "global-translations" => "GlobalTranslations"
-            config.datasources[index]
-              .split("-")
-              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join("")
-          } = '${response.datasource_entries
-            .map(({ name }: { name: string }) => name)
-            .join("' | '")}';`
+          parseDatasourceResponse(response, config.datasources[index])
         );
         return;
       } else {
         console.log(chalk.blue("Writing to file..."));
         fs.writeFileSync(
           path.join(process.cwd(), config.outputPath || "./types/sb-types.ts"),
-          `export type ${
-            // string is like "global-translations" => "GlobalTranslations"
-            config.datasources[index]
-              .split("-")
-              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-              .join("")
-          } = '${response.datasource_entries
-            .map(({ name }: { name: string }) => name)
-            .join("' | '")}';`
+          parseDatasourceResponse(response, config.datasources[index])
         );
       }
     });
