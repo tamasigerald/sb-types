@@ -1,31 +1,39 @@
 #!/usr/bin/env node
-import chalk from "chalk";
-import clear from "clear";
-import figlet from "figlet";
-import fs from "fs";
-import path from "path";
-import { Command } from "commander";
-import { development, production } from "./mocks";
-import { mkdirp } from "mkdirp";
+import chalk from 'chalk';
+import clear from 'clear';
+import figlet from 'figlet';
+import fs from 'fs';
+import path from 'path';
+import { Command } from 'commander';
+import { development, production } from './mocks';
+import { mkdirp } from 'mkdirp';
+import dotenv from 'dotenv';
+import prettier from 'prettier';
 
 const program = new Command();
 
-const pkg = require(path.join(__dirname, "../package.json"));
+const pkg = require(path.join(__dirname, '../package.json'));
 const version = pkg.version;
 const name = pkg.name;
 
 clear();
 
-console.log(chalk.blue(figlet.textSync(name, { horizontalLayout: "full" })));
-console.log(chalk.blue(`version: ${version}`));
+console.info(chalk.blue(figlet.textSync(name, { horizontalLayout: 'full' })));
+console.info(chalk.blue(`version: ${version}`));
 
 program
-  .version("1.0.0")
-  .description("An example CLI for managing a directory")
-  .option("-d, --debug", "local debug mode")
-  .option("-o, --overwrite", "overwrite the output file");
+  .version('1.0.0')
+  .description('An example CLI for managing a directory')
+  .option('-d, --debug', 'local debug mode')
+  .option('-ovd, --overwrite', 'overwrite the output file')
+  .option('-env, --env-path <path>', 'path to the env file')
+  .option('-p, --pretty', 'pretty print the output file');
 
 program.parse(process.argv);
+
+const envPath = program.opts().envPath || '.env';
+
+dotenv.config({ path: envPath });
 
 export type ConfigOptions = {
   /**
@@ -49,14 +57,22 @@ export type ConfigOptions = {
    * @default "./types/sb-types.ts"
    */
   outputPath?: string;
-  /**
-   * Enable debug mode
-   * @default false
-   */
-  debug?: boolean;
 };
 
-export const CONFIG_FILENAME = "sb-types.config.js";
+export const CONFIG_FILENAME = 'sb-types.config.js';
+
+const DEFAULT_PRETTIER_CONFIG = {
+  parser: 'typescript',
+  semi: true,
+  singleQuote: true,
+  trailingComma: 'es5',
+  printWidth: 80,
+} satisfies prettier.Options;
+
+const getPrettierConfig = async () => {
+  const prettierConfig = await prettier.resolveConfig(process.cwd());
+  return prettierConfig || DEFAULT_PRETTIER_CONFIG;
+};
 
 // get the config file from the current working directory
 export const getConfig = async () => {
@@ -67,30 +83,34 @@ export const getConfig = async () => {
 
     return config.default as ConfigOptions;
   } catch (error) {
-    console.log(chalk.red(error));
+    console.error(chalk.red(error));
     return null;
   }
 };
 
 // check if the config file exists in the current working directory, else create it
 export const checkConfig = async (): Promise<ConfigOptions> => {
-  console.log(chalk.blue("Checking config file..."));
+  console.info(chalk.blue('Checking config file...'));
   const config = await getConfig();
 
   if (!config) {
-    console.log(chalk.red("Config file not found, creating one..."));
+    console.info(chalk.red('Config file not found, creating one...'));
+    const prettierConfig = await getPrettierConfig();
     fs.writeFileSync(
       path.join(process.cwd(), CONFIG_FILENAME),
-      !program.opts().debug ? production : development
+      prettier.format(
+        !program.opts().debug ? production : development,
+        prettierConfig
+      )
     );
 
-    console.log(
-      chalk.green("Config file created! Please fill in the required fields.")
+    console.info(
+      chalk.green('Config file created! Please fill in the required fields.')
     );
     return process.exit(0);
   }
 
-  console.log(chalk.green("Config file found!"));
+  console.error(chalk.green('Config file found!'));
   return config;
 };
 
@@ -121,11 +141,12 @@ const parseDatasourceResponse = (response: DatasourceResponse, key: string) => {
   return `\nexport type ${
     // string is like "global-translations" => "GlobalTranslations"
     key
-      .split("-")
+      .split('-')
       .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join("")
+      .join('')
   } = '${response.datasource_entries
     .map(({ name }: { name: string }) => name)
+    .sort()
     .join("' | '")}';`;
 };
 
@@ -133,19 +154,19 @@ const init = async () => {
   const config = (await checkConfig()) as ConfigOptions;
 
   if (!config.api || !config.api?.endpoint || !config.api?.token) {
-    console.log(chalk.red("Missing API config"));
-    console.log(
-      chalk.red("Please add an API config to your sb-types.config.json file")
+    console.error(chalk.red('Missing API config'));
+    console.error(
+      chalk.red('Please add an API config to your sb-types.config.json file')
     );
 
     return process.exit(1);
   }
 
   if (!config.datasources || !config.datasources?.length) {
-    console.log(chalk.red("Missing datasources"));
-    console.log(
+    console.error(chalk.red('Missing datasources'));
+    console.error(
       chalk.red(
-        "Please add a list of datasources to your sb-types.config.json file"
+        'Please add a list of datasources to your sb-types.config.json file'
       )
     );
 
@@ -153,7 +174,7 @@ const init = async () => {
   }
 
   if (config) {
-    console.log(chalk.blue("Fetching datasources..."));
+    console.info(chalk.blue('Fetching datasources...'));
 
     const promises = config.datasources.map((datasource) =>
       fetchStoryblokDatasource(
@@ -166,30 +187,69 @@ const init = async () => {
     const responses = await Promise.all(promises);
 
     responses.forEach((response, index) => {
-      console.log(
+      console.info(
         chalk.green(`Datasource ${config.datasources[index]} fetched!`)
       );
 
-      const filePath = config.outputPath || "./types/sb-types.ts";
+      const filePath = config.outputPath || './types/sb-types.ts';
 
       // remove the file name from the path, then create the directory if it doesn't exist
-      const dirPath = filePath.split("/").slice(0, -1).join("/");
+      const dirPath = filePath.split('/').slice(0, -1).join('/');
       mkdirp.sync(dirPath); // this will create the directory if not exists
 
       // if file exists or no overwrite flag, append to it instead of overwriting it
       if (fs.existsSync(filePath) && !program.opts().overwrite) {
-        console.log(chalk.blue("Appending to file..."));
-        fs.appendFileSync(
-          path.join(process.cwd(), config.outputPath || "./types/sb-types.ts"),
-          parseDatasourceResponse(response, config.datasources[index])
-        );
+        console.info(chalk.blue('Appending to file...'));
+
+        if (program.opts().pretty) {
+          console.info(chalk.blue('Formatting file...'));
+          const formatted = prettier.format(
+            parseDatasourceResponse(response, config.datasources[index]),
+            {
+              parser: 'typescript',
+              semi: true,
+              singleQuote: true,
+              trailingComma: 'es5',
+              printWidth: 120,
+            }
+          );
+          fs.appendFileSync(filePath, formatted);
+        } else {
+          fs.appendFileSync(
+            path.join(
+              process.cwd(),
+              config.outputPath || './types/sb-types.ts'
+            ),
+            parseDatasourceResponse(response, config.datasources[index])
+          );
+        }
+
         return;
       } else {
-        console.log(chalk.blue("Writing to file..."));
-        fs.writeFileSync(
-          path.join(process.cwd(), config.outputPath || "./types/sb-types.ts"),
-          parseDatasourceResponse(response, config.datasources[index])
-        );
+        console.info(chalk.blue('Writing to file...'));
+
+        if (program.opts().pretty) {
+          console.info(chalk.blue('Formatting file...'));
+          const formatted = prettier.format(
+            parseDatasourceResponse(response, config.datasources[index]),
+            {
+              parser: 'typescript',
+              semi: true,
+              singleQuote: true,
+              trailingComma: 'es5',
+              printWidth: 120,
+            }
+          );
+          fs.writeFileSync(filePath, formatted);
+        } else {
+          fs.writeFileSync(
+            path.join(
+              process.cwd(),
+              config.outputPath || './types/sb-types.ts'
+            ),
+            parseDatasourceResponse(response, config.datasources[index])
+          );
+        }
       }
     });
   }
