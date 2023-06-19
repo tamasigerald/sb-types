@@ -1,13 +1,4 @@
-import { ConfigOptions } from '..';
-
-const DEFAULT_CONFIG: ConfigOptions = {
-  api: {
-    endpoint: 'https://api.storyblok.com/v2/cdn',
-    token: '',
-  },
-  datasources: [],
-  outputPath: './types/sb-types.ts',
-};
+import { DEFAULT_CONFIG } from "@/constants";
 
 export const development = `// @ts-check
 /** @type {import("./dist").ConfigOptions} */

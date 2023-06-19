@@ -1,0 +1,1 @@
+export const isDev = () => process.env.LOCAL_NODE_ENV === "development";

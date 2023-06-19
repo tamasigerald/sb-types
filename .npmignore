@@ -1,6 +1,7 @@
 sb-types.config.mjs
 node_modules
 dist
+src
 sb-types.config.cjs
 types
 .env*

@@ -1,21 +1,38 @@
 {
   "name": "sb-types",
-  "version": "0.0.4-beta",
-  "type": "commonjs",
+  "version": "0.1.0-beta",
+  "type": "module",
   "main": "./dist/index.js",
   "bin": {
     "sb-types": "./dist/index.js"
   },
-  "scripts": {
-    "start": "nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
-    "create": "npm run build && npm run test",
-    "build": "rm -r dist && tsc -p tsconfig.prod.json",
-    "local": "sudo npm i -g && pizza",
-    "refresh": "rm -rf ./node_modules ./package-lock.json && npm install"
+  "engines": {
+    "node": ">=18.0.0"
   },
-  "author": "",
+  "scripts": {
+    "build": "rm -rf ./dist && ENV=prod tsup",
+    "build:dev": "rm -rf ./dist && ENV=dev tsup"
+  },
+  "author": {
+    "name": "Gerald Andrei Tamasi",
+    "email": "info@tamasigerald.com",
+    "url": "https://tamasigerald.com/"
+  },
   "license": "ISC",
-  "description": "",
+  "description": "CLI tool for generating typescript types from Storyblok datasources",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tamasigerald/sb-types"
+  },
+  "keywords": [
+    "storyblok",
+    "storyblok-types",
+    "datasources",
+    "typescript",
+    "cli",
+    "types",
+    "types-generator"
+  ],
   "dependencies": {
     "chalk": "^4.1.2",
     "clear": "^0.1.0",
@@ -30,8 +47,8 @@
     "@types/figlet": "^1.5.6",
     "@types/node": "^20.3.0",
     "@types/prettier": "^2.7.3",
-    "nodemon": "^2.0.22",
-    "ts-node": "^10.9.1",
+    "esbuild": "0.18.4",
+    "tsup": "^7.0.0",
     "typescript": "^5.1.3"
   }
 }
