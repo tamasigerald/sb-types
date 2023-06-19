@@ -11,7 +11,8 @@
   },
   "scripts": {
     "build": "rm -rf ./dist && ENV=prod tsup",
-    "build:dev": "rm -rf ./dist && ENV=dev tsup"
+    "build:dev": "rm -rf ./dist && ENV=dev tsup",
+    "type-check": "tsc -p tsconfig.json --pretty --noEmit"
   },
   "author": {
     "name": "Gerald Andrei Tamasi",
