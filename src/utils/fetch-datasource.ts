@@ -33,7 +33,7 @@ export const fetchStoryblokDatasource = async (
 
   params.append("per_page", options?.per_page?.toString() || "250");
 
-  params.append("cv", "0"); // disable cache
+  params.append("cv", ""); // disable cache
 
   if (options.page) {
     params.append("page", options.page.toString());
