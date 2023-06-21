@@ -20,6 +20,7 @@ type Options = {
   datasource: string;
   per_page?: number;
   page?: number;
+  cv: string;
 };
 
 export const fetchStoryblokDatasource = async (
@@ -33,7 +34,7 @@ export const fetchStoryblokDatasource = async (
 
   params.append("per_page", options?.per_page?.toString() || "250");
 
-  params.append("cv", ""); // disable cache
+  params.append("cv", options.cv || new Date().toISOString());
 
   if (options.page) {
     params.append("page", options.page.toString());

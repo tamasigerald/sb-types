@@ -48,6 +48,11 @@ export type ConfigOptions = {
    * @default "./types/sb-types.ts"
    */
   outputPath?: string;
+  /**
+   * Cache validation string
+   * @default new Date().toISOString()
+   */
+  cache_validation?: string;
 };
 
 export type ProgramOptions = {

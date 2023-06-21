@@ -42,6 +42,7 @@ export const init = async () => {
       fetchStoryblokDatasource(config.api.endpoint, config.api.token, {
         datasource: datasource.name,
         per_page: datasource.amount || 250,
+        cv: config.cache_validation || new Date().toISOString(),
       })
     );
 
