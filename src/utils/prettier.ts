@@ -4,7 +4,7 @@ import { DEFAULT_PRETTIER_CONFIG } from "@/constants";
 
 export const getPrettierConfig = async () => {
   const prettierConfig = await prettier.resolveConfig(process.cwd());
-  return prettierConfig || DEFAULT_PRETTIER_CONFIG;
+  return prettierConfig ? {...prettierConfig, parser: "typescript"} : DEFAULT_PRETTIER_CONFIG;
 };
 
 export const prettierFormat = async (code: string) => {

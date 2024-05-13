@@ -2,17 +2,15 @@ import { mkdirp } from "mkdirp";
 import fs from "node:fs";
 import path from "node:path";
 
-import { DEFAULT_OUTPUT_FILENAME, DEFAULT_OUTPUT_PATH } from "@/constants";
+import { DEFAULT_OUTPUT_PATH } from "@/constants";
 import {
   checkConfigFile,
   fetchStoryblokDatasource,
   getName,
   getProgramOptions,
-  getVersion,
   parseDatasourceResponse,
   prettierFormat,
 } from "@/utils";
-import figlet from "figlet";
 
 const options = getProgramOptions();
 
@@ -21,7 +19,7 @@ export const init = async () => {
 
   if (!config.api || !config.api?.endpoint || !config.api?.token) {
     logger.error("Missing API config");
-    logger.error("Please add an API config to your sb-types.config.json file");
+    logger.error("Please add an API config to your sb-types.config.cjs file");
 
     return process.exit(1);
   }
@@ -29,7 +27,7 @@ export const init = async () => {
   if (!config.datasources || !config.datasources?.length) {
     logger.error("Missing datasources");
     logger.error(
-      "Please add a list of datasources to your sb-types.config.json file"
+      "Please add a list of datasources to your sb-types.config.cjs file"
     );
 
     return process.exit(1);
